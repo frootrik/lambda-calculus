@@ -15,11 +15,9 @@ build-type:          Simple
 extra-source-files:  README.md
                      CHANGELOG.md
 
-executable lambda-calculus
+library
   hs-source-dirs:      src
-  main-is:             Main.hs
-  other-modules:       LambdaAST, Parser, Evaluator
-  default-language:    Haskell2010
+  exposed-modules:     LambdaAST, Parser, Evaluator
   build-depends:
     base >= 4.7 && < 5
     , megaparsec >= 9.0
@@ -27,6 +25,34 @@ executable lambda-calculus
     , mtl
     , prettyprinter
     , QuickCheck
+  default-language:    Haskell2010
+
+
+executable lambda-calculus
+  hs-source-dirs:      src
+  main-is:             Main.hs
+  other-modules:       LambdaAST, Parser, Evaluator
+  default-language:    Haskell2010
+  build-depends:
+    base >= 4.7 && < 5
+    , lambda-calculus
+    , prettyprinter
+    , prettyprinter-ansi-terminal
+    , megaparsec >= 9.0
+
+  
+test-suite lambda-calculus-tests
+    type:              exitcode-stdio-1.0
+    hs-source-dirs:    test
+    main-is:           LambdaTest.hs
+    build-depends:
+      base >= 4.7 && < 5,
+      lambda-calculus,
+      tasty,
+      tasty-quickcheck,
+      QuickCheck
+    default-language:  Haskell2010
+
 
   ghc-options:         -Wall
                        -Wcompat

@@ -10,16 +10,6 @@
   (major1) == 0 && (major2) <  1 || \
   (major1) == 0 && (major2) == 1 && (minor) <= 0)
 #endif /* MIN_VERSION_lambda_calculus */
-/* package QuickCheck-2.14.3 */
-#ifndef VERSION_QuickCheck
-#define VERSION_QuickCheck "2.14.3"
-#endif /* VERSION_QuickCheck */
-#ifndef MIN_VERSION_QuickCheck
-#define MIN_VERSION_QuickCheck(major1,major2,minor) (\
-  (major1) <  2 || \
-  (major1) == 2 && (major2) <  14 || \
-  (major1) == 2 && (major2) == 14 && (minor) <= 3)
-#endif /* MIN_VERSION_QuickCheck */
 /* package base-4.19.2.0 */
 #ifndef VERSION_base
 #define VERSION_base "4.19.2.0"
@@ -30,6 +20,16 @@
   (major1) == 4 && (major2) <  19 || \
   (major1) == 4 && (major2) == 19 && (minor) <= 2)
 #endif /* MIN_VERSION_base */
+/* package lambda-calculus-0.1.0.0 */
+#ifndef VERSION_lambda_calculus
+#define VERSION_lambda_calculus "0.1.0.0"
+#endif /* VERSION_lambda_calculus */
+#ifndef MIN_VERSION_lambda_calculus
+#define MIN_VERSION_lambda_calculus(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  1 || \
+  (major1) == 0 && (major2) == 1 && (minor) <= 0)
+#endif /* MIN_VERSION_lambda_calculus */
 /* package megaparsec-9.6.1 */
 #ifndef VERSION_megaparsec
 #define VERSION_megaparsec "9.6.1"
@@ -40,16 +40,6 @@
   (major1) == 9 && (major2) <  6 || \
   (major1) == 9 && (major2) == 6 && (minor) <= 1)
 #endif /* MIN_VERSION_megaparsec */
-/* package mtl-2.3.1 */
-#ifndef VERSION_mtl
-#define VERSION_mtl "2.3.1"
-#endif /* VERSION_mtl */
-#ifndef MIN_VERSION_mtl
-#define MIN_VERSION_mtl(major1,major2,minor) (\
-  (major1) <  2 || \
-  (major1) == 2 && (major2) <  3 || \
-  (major1) == 2 && (major2) == 3 && (minor) <= 1)
-#endif /* MIN_VERSION_mtl */
 /* package prettyprinter-1.7.1 */
 #ifndef VERSION_prettyprinter
 #define VERSION_prettyprinter "1.7.1"
@@ -60,16 +50,16 @@
   (major1) == 1 && (major2) <  7 || \
   (major1) == 1 && (major2) == 7 && (minor) <= 1)
 #endif /* MIN_VERSION_prettyprinter */
-/* package text-2.1.1 */
-#ifndef VERSION_text
-#define VERSION_text "2.1.1"
-#endif /* VERSION_text */
-#ifndef MIN_VERSION_text
-#define MIN_VERSION_text(major1,major2,minor) (\
-  (major1) <  2 || \
-  (major1) == 2 && (major2) <  1 || \
-  (major1) == 2 && (major2) == 1 && (minor) <= 1)
-#endif /* MIN_VERSION_text */
+/* package prettyprinter-ansi-terminal-1.1.3 */
+#ifndef VERSION_prettyprinter_ansi_terminal
+#define VERSION_prettyprinter_ansi_terminal "1.1.3"
+#endif /* VERSION_prettyprinter_ansi_terminal */
+#ifndef MIN_VERSION_prettyprinter_ansi_terminal
+#define MIN_VERSION_prettyprinter_ansi_terminal(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  1 || \
+  (major1) == 1 && (major2) == 1 && (minor) <= 3)
+#endif /* MIN_VERSION_prettyprinter_ansi_terminal */
 
 /* tool gcc-17.0.0 */
 #ifndef TOOL_VERSION_gcc
@@ -153,7 +143,7 @@
 #endif /* MIN_TOOL_VERSION_runghc */
 
 #ifndef CURRENT_COMPONENT_ID
-#define CURRENT_COMPONENT_ID "lambda-calculus-0.1.0.0-Thq8PxSfqx46UFlu8BSnx-lambda-calculus"
+#define CURRENT_COMPONENT_ID "lambda-calculus-0.1.0.0-oK7q7DqC585tsBzBNEwy3-lambda-calculus"
 #endif /* CURRENT_COMPONENT_ID */
 #ifndef CURRENT_PACKAGE_VERSION
 #define CURRENT_PACKAGE_VERSION "0.1.0.0"

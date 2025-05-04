@@ -1,0 +1,12 @@
+/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/CHANGELOG.md:
+  hash: 40c97623b4b7f1dddb868716ecb58c8286c39c1352b08f024a95b1508c0be80f
+/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/README.md:
+  hash: 864cb6c1e9a46bd173d16bd9f25fee2152706526aa557ab621409d40d3bd267f
+/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/lambda-calculus.cabal:
+  hash: 769cfe49d79d710ce06f1c37cc010d5fc94bb171a4bb8151fdfa10a6669a89cd
+/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/src/Evaluator.hs:
+  hash: 47fee121b8472ac9f2e121c506c16c340bdb4649bfa3900ac2a01ec5ad5ccbaa
+/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/src/LambdaAST.hs:
+  hash: e3a3cff0012cb868110b9ecdfd332e7222cfe4e746b8893acd357a2152b8e1d1
+/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/src/Parser.hs:
+  hash: d30ffcf7e1c6bc5a5aa2334c834d73875cbe6d5c35d718d8530773d4e8e99886

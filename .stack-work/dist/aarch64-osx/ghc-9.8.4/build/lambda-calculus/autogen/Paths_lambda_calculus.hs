@@ -47,7 +47,7 @@ getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir, getSysconfDir :: 
 
 bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir :: FilePath
 bindir     = "/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/.stack-work/install/aarch64-osx/b9a4555b918640aad268600500670e25523014a777fc83101b6cabaadbd70b79/9.8.4/bin"
-libdir     = "/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/.stack-work/install/aarch64-osx/b9a4555b918640aad268600500670e25523014a777fc83101b6cabaadbd70b79/9.8.4/lib/aarch64-osx-ghc-9.8.4/lambda-calculus-0.1.0.0-Thq8PxSfqx46UFlu8BSnx-lambda-calculus"
+libdir     = "/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/.stack-work/install/aarch64-osx/b9a4555b918640aad268600500670e25523014a777fc83101b6cabaadbd70b79/9.8.4/lib/aarch64-osx-ghc-9.8.4/lambda-calculus-0.1.0.0-oK7q7DqC585tsBzBNEwy3-lambda-calculus"
 dynlibdir  = "/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/.stack-work/install/aarch64-osx/b9a4555b918640aad268600500670e25523014a777fc83101b6cabaadbd70b79/9.8.4/lib/aarch64-osx-ghc-9.8.4"
 datadir    = "/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/.stack-work/install/aarch64-osx/b9a4555b918640aad268600500670e25523014a777fc83101b6cabaadbd70b79/9.8.4/share/aarch64-osx-ghc-9.8.4/lambda-calculus-0.1.0.0"
 libexecdir = "/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/.stack-work/install/aarch64-osx/b9a4555b918640aad268600500670e25523014a777fc83101b6cabaadbd70b79/9.8.4/libexec/aarch64-osx-ghc-9.8.4/lambda-calculus-0.1.0.0"

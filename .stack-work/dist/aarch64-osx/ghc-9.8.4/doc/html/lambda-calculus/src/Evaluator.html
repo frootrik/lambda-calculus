@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">-- |</span><span>
+</span><span id="line-2"></span><span class="hs-comment">-- Module      : Evaluator</span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- Description : Implements beta-reduction, single-step evaluation, and normalization</span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- for lambda calculus expressions. This module defines the evaluation semantics</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- for the Lambda AST using monadic substitution.</span><span>
+</span><span id="line-6"></span><span>
+</span><span id="line-7"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Evaluator</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-8"></span><span>
+</span><span id="line-9"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="LambdaAST.html"><span class="hs-identifier">LambdaAST</span></a></span><span>
+</span><span id="line-10"></span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- | Performs &#946;-reduction by substituting the argument expression</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- for the bound variable in the body of a lambda abstraction.</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- </span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- The body must be of type @Lambda (Variable a)@, where bound variables</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- are marked with @Bound@ and free variables with @Free a@.</span><span>
+</span><span id="line-16"></span><span class="hs-comment">--</span><span>
+</span><span id="line-17"></span><span class="hs-comment">-- The argument is substituted wherever @Bound@ appears.</span><span>
+</span><span id="line-18"></span><span id="local-6989586621679073475"><span class="annot"><a href="Evaluator.html#subst"><span class="hs-identifier hs-type">subst</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-type">Lambda</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="LambdaAST.html#Variable"><span class="hs-identifier hs-type">Variable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679073475"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-type">Lambda</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679073475"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-type">Lambda</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679073475"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-19"></span><span id="subst"><span class="annot"><span class="annottext">subst :: forall a. Lambda (Variable a) -&gt; Lambda a -&gt; Lambda a
+</span><a href="Evaluator.html#subst"><span class="hs-identifier hs-var hs-var">subst</span></a></span></span><span> </span><span id="local-6989586621679073496"><span class="annot"><span class="annottext">Lambda (Variable a)
+</span><a href="#local-6989586621679073496"><span class="hs-identifier hs-var">body</span></a></span></span><span> </span><span id="local-6989586621679073497"><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073497"><span class="hs-identifier hs-var">arg</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Lambda (Variable a)
+</span><a href="#local-6989586621679073496"><span class="hs-identifier hs-var">body</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda (Variable a) -&gt; (Variable a -&gt; Lambda a) -&gt; Lambda a
+forall a b. Lambda a -&gt; (a -&gt; Lambda b) -&gt; Lambda b
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679073498"><span class="annot"><span class="annottext">Variable a
+</span><a href="#local-6989586621679073498"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Variable a
+</span><a href="#local-6989586621679073498"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-20"></span><span>  </span><span class="annot"><span class="annottext">Variable a
+</span><a href="LambdaAST.html#Bound"><span class="hs-identifier hs-var">Bound</span></a></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073497"><span class="hs-identifier hs-var">arg</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="annot"><a href="LambdaAST.html#Free"><span class="hs-identifier hs-type">Free</span></a></span><span> </span><span id="local-6989586621679073501"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679073501"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">a -&gt; Lambda a
+forall var. var -&gt; Lambda var
+</span><a href="LambdaAST.html#Var"><span class="hs-identifier hs-var">Var</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679073501"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span class="hs-comment">-- | Performs a single evaluation step of &#946;-reduction.</span><span>
+</span><span id="line-24"></span><span class="hs-comment">--</span><span>
+</span><span id="line-25"></span><span class="hs-comment">-- If the expression is an application of a lambda abstraction to an argument,</span><span>
+</span><span id="line-26"></span><span class="hs-comment">-- it reduces by substitution. Otherwise, it tries to reduce either the function</span><span>
+</span><span id="line-27"></span><span class="hs-comment">-- or the argument recursively.</span><span>
+</span><span id="line-28"></span><span class="hs-comment">--</span><span>
+</span><span id="line-29"></span><span class="hs-comment">-- Returns @Nothing@ if the expression is in normal form.</span><span>
+</span><span id="line-30"></span><span id="local-6989586621679073483"><span class="annot"><a href="Evaluator.html#step"><span class="hs-identifier hs-type">step</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-type">Lambda</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679073483"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-type">Lambda</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679073483"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-31"></span><span id="step"><span class="annot"><span class="annottext">step :: forall a. Lambda a -&gt; Maybe (Lambda a)
+</span><a href="Evaluator.html#step"><span class="hs-identifier hs-var hs-var">step</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="LambdaAST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="LambdaAST.html#LamAbs"><span class="hs-identifier hs-type">LamAbs</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679073508"><span class="annot"><span class="annottext">Lambda (Variable a)
+</span><a href="#local-6989586621679073508"><span class="hs-identifier hs-var">body</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679073509"><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073509"><span class="hs-identifier hs-var">arg</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Lambda a -&gt; Maybe (Lambda a)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Lambda (Variable a) -&gt; Lambda a -&gt; Lambda a
+forall a. Lambda (Variable a) -&gt; Lambda a -&gt; Lambda a
+</span><a href="Evaluator.html#subst"><span class="hs-identifier hs-var">subst</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda (Variable a)
+</span><a href="#local-6989586621679073508"><span class="hs-identifier hs-var">body</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073509"><span class="hs-identifier hs-var">arg</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span class="annot"><a href="Evaluator.html#step"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="LambdaAST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span id="local-6989586621679073510"><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073510"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679073511"><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073511"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Lambda a -&gt; Maybe (Lambda a)
+forall a. Lambda a -&gt; Maybe (Lambda a)
+</span><a href="Evaluator.html#step"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073510"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-34"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679073512"><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073512"><span class="hs-identifier hs-var">f'</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Lambda a -&gt; Maybe (Lambda a)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Lambda a -&gt; Lambda a -&gt; Lambda a
+forall var. Lambda var -&gt; Lambda var -&gt; Lambda var
+</span><a href="LambdaAST.html#App"><span class="hs-identifier hs-var">App</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073512"><span class="hs-identifier hs-var">f'</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073511"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span>    </span><span class="annot"><span class="annottext">Maybe (Lambda a)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-36"></span><span>      </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Lambda a -&gt; Maybe (Lambda a)
+forall a. Lambda a -&gt; Maybe (Lambda a)
+</span><a href="Evaluator.html#step"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073511"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-37"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679073513"><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073513"><span class="hs-identifier hs-var">x'</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Lambda a -&gt; Maybe (Lambda a)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Lambda a -&gt; Lambda a -&gt; Lambda a
+forall var. Lambda var -&gt; Lambda var -&gt; Lambda var
+</span><a href="LambdaAST.html#App"><span class="hs-identifier hs-var">App</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073510"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073513"><span class="hs-identifier hs-var">x'</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span>        </span><span class="annot"><span class="annottext">Maybe (Lambda a)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe (Lambda a)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-39"></span><span class="annot"><a href="Evaluator.html#step"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="LambdaAST.html#LamAbs"><span class="hs-identifier hs-type">LamAbs</span></a></span><span> </span><span id="local-6989586621679073514"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679073514"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679073515"><span class="annot"><span class="annottext">Lambda (Variable a)
+</span><a href="#local-6989586621679073515"><span class="hs-identifier hs-var">body</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Lambda (Variable a) -&gt; Lambda a
+forall var. String -&gt; Lambda (Variable var) -&gt; Lambda var
+</span><a href="LambdaAST.html#LamAbs"><span class="hs-identifier hs-var">LamAbs</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679073514"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">(Lambda (Variable a) -&gt; Lambda a)
+-&gt; Maybe (Lambda (Variable a)) -&gt; Maybe (Lambda a)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Lambda (Variable a) -&gt; Maybe (Lambda (Variable a))
+forall a. Lambda a -&gt; Maybe (Lambda a)
+</span><a href="Evaluator.html#step"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda (Variable a)
+</span><a href="#local-6989586621679073515"><span class="hs-identifier hs-var">body</span></a></span><span>
+</span><span id="line-40"></span><span class="annot"><a href="Evaluator.html#step"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe (Lambda a)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-41"></span><span>
+</span><span id="line-42"></span><span class="hs-comment">-- | Produces a list of successive evaluation steps from the input expression</span><span>
+</span><span id="line-43"></span><span class="hs-comment">-- to its normal form.</span><span>
+</span><span id="line-44"></span><span class="hs-comment">--</span><span>
+</span><span id="line-45"></span><span class="hs-comment">-- Each element in the list represents the expression at a stage of evaluation.</span><span>
+</span><span id="line-46"></span><span class="hs-comment">-- The final element is the expression in normal form.</span><span>
+</span><span id="line-47"></span><span id="local-6989586621679073489"><span class="annot"><a href="Evaluator.html#traceSteps"><span class="hs-identifier hs-type">traceSteps</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-type">Lambda</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679073489"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-type">Lambda</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679073489"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span></span><span>
+</span><span id="line-48"></span><span id="traceSteps"><span class="annot"><span class="annottext">traceSteps :: forall a. Lambda a -&gt; [Lambda a]
+</span><a href="Evaluator.html#traceSteps"><span class="hs-identifier hs-var hs-var">traceSteps</span></a></span></span><span> </span><span id="local-6989586621679073518"><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073518"><span class="hs-identifier hs-var">expr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Lambda a -&gt; Maybe (Lambda a)
+forall a. Lambda a -&gt; Maybe (Lambda a)
+</span><a href="Evaluator.html#step"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073518"><span class="hs-identifier hs-var">expr</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-49"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679073519"><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073519"><span class="hs-identifier hs-var">next</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073518"><span class="hs-identifier hs-var">expr</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda a -&gt; [Lambda a] -&gt; [Lambda a]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">Lambda a -&gt; [Lambda a]
+forall a. Lambda a -&gt; [Lambda a]
+</span><a href="Evaluator.html#traceSteps"><span class="hs-identifier hs-var">traceSteps</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073519"><span class="hs-identifier hs-var">next</span></a></span><span>
+</span><span id="line-50"></span><span>  </span><span class="annot"><span class="annottext">Maybe (Lambda a)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073518"><span class="hs-identifier hs-var">expr</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-51"></span><span>
+</span><span id="line-52"></span><span class="hs-comment">-- | Normalizes a lambda expression by repeatedly applying 'step'</span><span>
+</span><span id="line-53"></span><span class="hs-comment">-- until no further reductions can be made.</span><span>
+</span><span id="line-54"></span><span class="hs-comment">--</span><span>
+</span><span id="line-55"></span><span class="hs-comment">-- Returns the expression in normal form.</span><span>
+</span><span id="line-56"></span><span id="local-6989586621679073491"><span class="annot"><a href="Evaluator.html#eval"><span class="hs-identifier hs-type">eval</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-type">Lambda</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679073491"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-type">Lambda</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679073491"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-57"></span><span id="eval"><span class="annot"><span class="annottext">eval :: forall a. Lambda a -&gt; Lambda a
+</span><a href="Evaluator.html#eval"><span class="hs-identifier hs-var hs-var">eval</span></a></span></span><span> </span><span id="local-6989586621679073521"><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073521"><span class="hs-identifier hs-var">expr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Lambda a -&gt; Maybe (Lambda a)
+forall a. Lambda a -&gt; Maybe (Lambda a)
+</span><a href="Evaluator.html#step"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073521"><span class="hs-identifier hs-var">expr</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-58"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679073522"><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073522"><span class="hs-identifier hs-var">next</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Lambda a -&gt; Lambda a
+forall a. Lambda a -&gt; Lambda a
+</span><a href="Evaluator.html#eval"><span class="hs-identifier hs-var">eval</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073522"><span class="hs-identifier hs-var">next</span></a></span><span>
+</span><span id="line-59"></span><span>  </span><span class="annot"><span class="annottext">Maybe (Lambda a)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073521"><span class="hs-identifier hs-var">expr</span></a></span><span>
+</span><span id="line-60"></span></pre></body></html>

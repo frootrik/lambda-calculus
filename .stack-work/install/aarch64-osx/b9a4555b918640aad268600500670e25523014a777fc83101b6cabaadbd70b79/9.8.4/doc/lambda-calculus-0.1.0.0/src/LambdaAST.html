@@ -1,0 +1,638 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DeriveTraversable #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- Module      : LambdaAST</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- Description : Abstract syntax tree and core data types for lambda calculus.</span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- </span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- This module defines the representation of lambda calculus expressions, including</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- support for distinguishing free and bound variables, monadic substitution, and</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- pretty-printing using the 'prettyprinter' library.</span><span>
+</span><span id="line-10"></span><span>
+</span><span id="line-11"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">LambdaAST</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-12"></span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ap</span></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Prettyprinter</span></span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Prettyprinter.Render.String</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">renderString</span></span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span>
+</span><span id="line-17"></span><span class="hs-comment">-- | A variable in a lambda expression, either bound or free.</span><span>
+</span><span id="line-18"></span><span class="hs-comment">--</span><span>
+</span><span id="line-19"></span><span class="hs-comment">-- 'Bound' represents a variable that is bound by a lambda abstraction.</span><span>
+</span><span id="line-20"></span><span class="hs-comment">-- 'Free a' represents a free variable identified by some name or value of type 'a'.</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">data</span><span> </span><span id="Variable"><span class="annot"><a href="LambdaAST.html#Variable"><span class="hs-identifier hs-var">Variable</span></a></span></span><span> </span><span id="local-6989586621679073020"><span class="annot"><a href="#local-6989586621679073020"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Bound"><span class="annot"><a href="LambdaAST.html#Bound"><span class="hs-identifier hs-var">Bound</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Free"><span class="annot"><a href="LambdaAST.html#Free"><span class="hs-identifier hs-var">Free</span></a></span></span><span> </span><span class="annot"><a href="#local-6989586621679073020"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679073075"><span id="local-6989586621679073080"><span id="local-6989586621679073084"><span class="annot"><span class="annottext">Int -&gt; Variable a -&gt; ShowS
+[Variable a] -&gt; ShowS
+Variable a -&gt; String
+(Int -&gt; Variable a -&gt; ShowS)
+-&gt; (Variable a -&gt; String)
+-&gt; ([Variable a] -&gt; ShowS)
+-&gt; Show (Variable a)
+forall a. Show a =&gt; Int -&gt; Variable a -&gt; ShowS
+forall a. Show a =&gt; [Variable a] -&gt; ShowS
+forall a. Show a =&gt; Variable a -&gt; String
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: forall a. Show a =&gt; Int -&gt; Variable a -&gt; ShowS
+showsPrec :: Int -&gt; Variable a -&gt; ShowS
+$cshow :: forall a. Show a =&gt; Variable a -&gt; String
+show :: Variable a -&gt; String
+$cshowList :: forall a. Show a =&gt; [Variable a] -&gt; ShowS
+showList :: [Variable a] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679073089"><span id="local-6989586621679073092"><span class="annot"><span class="annottext">Variable a -&gt; Variable a -&gt; Bool
+(Variable a -&gt; Variable a -&gt; Bool)
+-&gt; (Variable a -&gt; Variable a -&gt; Bool) -&gt; Eq (Variable a)
+forall a. Eq a =&gt; Variable a -&gt; Variable a -&gt; Bool
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: forall a. Eq a =&gt; Variable a -&gt; Variable a -&gt; Bool
+== :: Variable a -&gt; Variable a -&gt; Bool
+$c/= :: forall a. Eq a =&gt; Variable a -&gt; Variable a -&gt; Bool
+/= :: Variable a -&gt; Variable a -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679073097"><span id="local-6989586621679073099"><span class="annot"><span class="annottext">(forall a b. (a -&gt; b) -&gt; Variable a -&gt; Variable b)
+-&gt; (forall a b. a -&gt; Variable b -&gt; Variable a) -&gt; Functor Variable
+forall a b. a -&gt; Variable b -&gt; Variable a
+forall a b. (a -&gt; b) -&gt; Variable a -&gt; Variable b
+forall (f :: * -&gt; *).
+(forall a b. (a -&gt; b) -&gt; f a -&gt; f b)
+-&gt; (forall a b. a -&gt; f b -&gt; f a) -&gt; Functor f
+$cfmap :: forall a b. (a -&gt; b) -&gt; Variable a -&gt; Variable b
+fmap :: forall a b. (a -&gt; b) -&gt; Variable a -&gt; Variable b
+$c&lt;$ :: forall a b. a -&gt; Variable b -&gt; Variable a
+&lt;$ :: forall a b. a -&gt; Variable b -&gt; Variable a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Functor</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679073103"><span id="local-6989586621679073109"><span id="local-6989586621679073113"><span id="local-6989586621679073118"><span id="local-6989586621679073120"><span id="local-6989586621679073123"><span id="local-6989586621679073126"><span id="local-6989586621679073129"><span id="local-6989586621679073132"><span id="local-6989586621679073135"><span id="local-6989586621679073138"><span id="local-6989586621679073140"><span id="local-6989586621679073143"><span id="local-6989586621679073148"><span id="local-6989586621679073153"><span id="local-6989586621679073158"><span id="local-6989586621679073163"><span class="annot"><span class="annottext">(forall m. Monoid m =&gt; Variable m -&gt; m)
+-&gt; (forall m a. Monoid m =&gt; (a -&gt; m) -&gt; Variable a -&gt; m)
+-&gt; (forall m a. Monoid m =&gt; (a -&gt; m) -&gt; Variable a -&gt; m)
+-&gt; (forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; Variable a -&gt; b)
+-&gt; (forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; Variable a -&gt; b)
+-&gt; (forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; Variable a -&gt; b)
+-&gt; (forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; Variable a -&gt; b)
+-&gt; (forall a. (a -&gt; a -&gt; a) -&gt; Variable a -&gt; a)
+-&gt; (forall a. (a -&gt; a -&gt; a) -&gt; Variable a -&gt; a)
+-&gt; (forall a. Variable a -&gt; [a])
+-&gt; (forall a. Variable a -&gt; Bool)
+-&gt; (forall a. Variable a -&gt; Int)
+-&gt; (forall a. Eq a =&gt; a -&gt; Variable a -&gt; Bool)
+-&gt; (forall a. Ord a =&gt; Variable a -&gt; a)
+-&gt; (forall a. Ord a =&gt; Variable a -&gt; a)
+-&gt; (forall a. Num a =&gt; Variable a -&gt; a)
+-&gt; (forall a. Num a =&gt; Variable a -&gt; a)
+-&gt; Foldable Variable
+forall a. Eq a =&gt; a -&gt; Variable a -&gt; Bool
+forall a. Num a =&gt; Variable a -&gt; a
+forall a. Ord a =&gt; Variable a -&gt; a
+forall m. Monoid m =&gt; Variable m -&gt; m
+forall a. Variable a -&gt; Bool
+forall a. Variable a -&gt; Int
+forall a. Variable a -&gt; [a]
+forall a. (a -&gt; a -&gt; a) -&gt; Variable a -&gt; a
+forall m a. Monoid m =&gt; (a -&gt; m) -&gt; Variable a -&gt; m
+forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; Variable a -&gt; b
+forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; Variable a -&gt; b
+forall (t :: * -&gt; *).
+(forall m. Monoid m =&gt; t m -&gt; m)
+-&gt; (forall m a. Monoid m =&gt; (a -&gt; m) -&gt; t a -&gt; m)
+-&gt; (forall m a. Monoid m =&gt; (a -&gt; m) -&gt; t a -&gt; m)
+-&gt; (forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b)
+-&gt; (forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b)
+-&gt; (forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b)
+-&gt; (forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b)
+-&gt; (forall a. (a -&gt; a -&gt; a) -&gt; t a -&gt; a)
+-&gt; (forall a. (a -&gt; a -&gt; a) -&gt; t a -&gt; a)
+-&gt; (forall a. t a -&gt; [a])
+-&gt; (forall a. t a -&gt; Bool)
+-&gt; (forall a. t a -&gt; Int)
+-&gt; (forall a. Eq a =&gt; a -&gt; t a -&gt; Bool)
+-&gt; (forall a. Ord a =&gt; t a -&gt; a)
+-&gt; (forall a. Ord a =&gt; t a -&gt; a)
+-&gt; (forall a. Num a =&gt; t a -&gt; a)
+-&gt; (forall a. Num a =&gt; t a -&gt; a)
+-&gt; Foldable t
+$cfold :: forall m. Monoid m =&gt; Variable m -&gt; m
+fold :: forall m. Monoid m =&gt; Variable m -&gt; m
+$cfoldMap :: forall m a. Monoid m =&gt; (a -&gt; m) -&gt; Variable a -&gt; m
+foldMap :: forall m a. Monoid m =&gt; (a -&gt; m) -&gt; Variable a -&gt; m
+$cfoldMap' :: forall m a. Monoid m =&gt; (a -&gt; m) -&gt; Variable a -&gt; m
+foldMap' :: forall m a. Monoid m =&gt; (a -&gt; m) -&gt; Variable a -&gt; m
+$cfoldr :: forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; Variable a -&gt; b
+foldr :: forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; Variable a -&gt; b
+$cfoldr' :: forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; Variable a -&gt; b
+foldr' :: forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; Variable a -&gt; b
+$cfoldl :: forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; Variable a -&gt; b
+foldl :: forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; Variable a -&gt; b
+$cfoldl' :: forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; Variable a -&gt; b
+foldl' :: forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; Variable a -&gt; b
+$cfoldr1 :: forall a. (a -&gt; a -&gt; a) -&gt; Variable a -&gt; a
+foldr1 :: forall a. (a -&gt; a -&gt; a) -&gt; Variable a -&gt; a
+$cfoldl1 :: forall a. (a -&gt; a -&gt; a) -&gt; Variable a -&gt; a
+foldl1 :: forall a. (a -&gt; a -&gt; a) -&gt; Variable a -&gt; a
+$ctoList :: forall a. Variable a -&gt; [a]
+toList :: forall a. Variable a -&gt; [a]
+$cnull :: forall a. Variable a -&gt; Bool
+null :: forall a. Variable a -&gt; Bool
+$clength :: forall a. Variable a -&gt; Int
+length :: forall a. Variable a -&gt; Int
+$celem :: forall a. Eq a =&gt; a -&gt; Variable a -&gt; Bool
+elem :: forall a. Eq a =&gt; a -&gt; Variable a -&gt; Bool
+$cmaximum :: forall a. Ord a =&gt; Variable a -&gt; a
+maximum :: forall a. Ord a =&gt; Variable a -&gt; a
+$cminimum :: forall a. Ord a =&gt; Variable a -&gt; a
+minimum :: forall a. Ord a =&gt; Variable a -&gt; a
+$csum :: forall a. Num a =&gt; Variable a -&gt; a
+sum :: forall a. Num a =&gt; Variable a -&gt; a
+$cproduct :: forall a. Num a =&gt; Variable a -&gt; a
+product :: forall a. Num a =&gt; Variable a -&gt; a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Foldable</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679073173"><span id="local-6989586621679073179"><span id="local-6989586621679073185"><span id="local-6989586621679073190"><span class="annot"><span class="annottext">Functor Variable
+Foldable Variable
+(Functor Variable, Foldable Variable) =&gt;
+(forall (f :: * -&gt; *) a b.
+ Applicative f =&gt;
+ (a -&gt; f b) -&gt; Variable a -&gt; f (Variable b))
+-&gt; (forall (f :: * -&gt; *) a.
+    Applicative f =&gt;
+    Variable (f a) -&gt; f (Variable a))
+-&gt; (forall (m :: * -&gt; *) a b.
+    Monad m =&gt;
+    (a -&gt; m b) -&gt; Variable a -&gt; m (Variable b))
+-&gt; (forall (m :: * -&gt; *) a.
+    Monad m =&gt;
+    Variable (m a) -&gt; m (Variable a))
+-&gt; Traversable Variable
+forall (t :: * -&gt; *).
+(Functor t, Foldable t) =&gt;
+(forall (f :: * -&gt; *) a b.
+ Applicative f =&gt;
+ (a -&gt; f b) -&gt; t a -&gt; f (t b))
+-&gt; (forall (f :: * -&gt; *) a. Applicative f =&gt; t (f a) -&gt; f (t a))
+-&gt; (forall (m :: * -&gt; *) a b.
+    Monad m =&gt;
+    (a -&gt; m b) -&gt; t a -&gt; m (t b))
+-&gt; (forall (m :: * -&gt; *) a. Monad m =&gt; t (m a) -&gt; m (t a))
+-&gt; Traversable t
+forall (m :: * -&gt; *) a. Monad m =&gt; Variable (m a) -&gt; m (Variable a)
+forall (f :: * -&gt; *) a.
+Applicative f =&gt;
+Variable (f a) -&gt; f (Variable a)
+forall (m :: * -&gt; *) a b.
+Monad m =&gt;
+(a -&gt; m b) -&gt; Variable a -&gt; m (Variable b)
+forall (f :: * -&gt; *) a b.
+Applicative f =&gt;
+(a -&gt; f b) -&gt; Variable a -&gt; f (Variable b)
+$ctraverse :: forall (f :: * -&gt; *) a b.
+Applicative f =&gt;
+(a -&gt; f b) -&gt; Variable a -&gt; f (Variable b)
+traverse :: forall (f :: * -&gt; *) a b.
+Applicative f =&gt;
+(a -&gt; f b) -&gt; Variable a -&gt; f (Variable b)
+$csequenceA :: forall (f :: * -&gt; *) a.
+Applicative f =&gt;
+Variable (f a) -&gt; f (Variable a)
+sequenceA :: forall (f :: * -&gt; *) a.
+Applicative f =&gt;
+Variable (f a) -&gt; f (Variable a)
+$cmapM :: forall (m :: * -&gt; *) a b.
+Monad m =&gt;
+(a -&gt; m b) -&gt; Variable a -&gt; m (Variable b)
+mapM :: forall (m :: * -&gt; *) a b.
+Monad m =&gt;
+(a -&gt; m b) -&gt; Variable a -&gt; m (Variable b)
+$csequence :: forall (m :: * -&gt; *) a. Monad m =&gt; Variable (m a) -&gt; m (Variable a)
+sequence :: forall (m :: * -&gt; *) a. Monad m =&gt; Variable (m a) -&gt; m (Variable a)
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Traversable</span></span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-comment">-- | The abstract syntax tree for lambda calculus terms.</span><span>
+</span><span id="line-25"></span><span class="hs-comment">--</span><span>
+</span><span id="line-26"></span><span class="hs-comment">-- Parameterized by the type of variables (e.g., 'String' or 'Variable a').</span><span>
+</span><span id="line-27"></span><span class="hs-comment">--</span><span>
+</span><span id="line-28"></span><span class="hs-comment">-- Constructors:</span><span>
+</span><span id="line-29"></span><span class="hs-comment">--</span><span>
+</span><span id="line-30"></span><span class="hs-comment">-- * 'Var' &#8212; A variable, either bound or free.</span><span>
+</span><span id="line-31"></span><span class="hs-comment">-- * 'App' &#8212; Function application: @(f x)@</span><span>
+</span><span id="line-32"></span><span class="hs-comment">-- * 'LamAbs' &#8212; Lambda abstraction: @&#955;x. body@</span><span>
+</span><span id="line-33"></span><span class="hs-comment">--</span><span>
+</span><span id="line-34"></span><span class="hs-comment">-- In 'LamAbs', the bound variable is named (for pretty-printing), but the body uses</span><span>
+</span><span id="line-35"></span><span class="hs-comment">-- 'Variable var' to distinguish bound from free variables.</span><span>
+</span><span id="line-36"></span><span class="hs-keyword">data</span><span> </span><span id="Lambda"><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-var">Lambda</span></a></span></span><span> </span><span id="local-6989586621679073037"><span class="annot"><a href="#local-6989586621679073037"><span class="hs-identifier hs-type">var</span></a></span></span><span>
+</span><span id="line-37"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span id="Var"><span class="annot"><a href="LambdaAST.html#Var"><span class="hs-identifier hs-var">Var</span></a></span></span><span> </span><span class="annot"><a href="#local-6989586621679073037"><span class="hs-identifier hs-type">var</span></a></span><span>
+</span><span id="line-38"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="App"><span class="annot"><a href="LambdaAST.html#App"><span class="hs-identifier hs-var">App</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-type">Lambda</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679073037"><span class="hs-identifier hs-type">var</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-type">Lambda</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679073037"><span class="hs-identifier hs-type">var</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="LamAbs"><span class="annot"><a href="LambdaAST.html#LamAbs"><span class="hs-identifier hs-var">LamAbs</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-type">Lambda</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="LambdaAST.html#Variable"><span class="hs-identifier hs-type">Variable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679073037"><span class="hs-identifier hs-type">var</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679073201"><span id="local-6989586621679073215"><span id="local-6989586621679073218"><span class="annot"><span class="annottext">Int -&gt; Lambda var -&gt; ShowS
+[Lambda var] -&gt; ShowS
+Lambda var -&gt; String
+(Int -&gt; Lambda var -&gt; ShowS)
+-&gt; (Lambda var -&gt; String)
+-&gt; ([Lambda var] -&gt; ShowS)
+-&gt; Show (Lambda var)
+forall var. Show var =&gt; Int -&gt; Lambda var -&gt; ShowS
+forall var. Show var =&gt; [Lambda var] -&gt; ShowS
+forall var. Show var =&gt; Lambda var -&gt; String
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: forall var. Show var =&gt; Int -&gt; Lambda var -&gt; ShowS
+showsPrec :: Int -&gt; Lambda var -&gt; ShowS
+$cshow :: forall var. Show var =&gt; Lambda var -&gt; String
+show :: Lambda var -&gt; String
+$cshowList :: forall var. Show var =&gt; [Lambda var] -&gt; ShowS
+showList :: [Lambda var] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679073223"><span id="local-6989586621679073234"><span class="annot"><span class="annottext">Lambda var -&gt; Lambda var -&gt; Bool
+(Lambda var -&gt; Lambda var -&gt; Bool)
+-&gt; (Lambda var -&gt; Lambda var -&gt; Bool) -&gt; Eq (Lambda var)
+forall var. Eq var =&gt; Lambda var -&gt; Lambda var -&gt; Bool
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: forall var. Eq var =&gt; Lambda var -&gt; Lambda var -&gt; Bool
+== :: Lambda var -&gt; Lambda var -&gt; Bool
+$c/= :: forall var. Eq var =&gt; Lambda var -&gt; Lambda var -&gt; Bool
+/= :: Lambda var -&gt; Lambda var -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679073238"><span id="local-6989586621679073244"><span class="annot"><span class="annottext">(forall a b. (a -&gt; b) -&gt; Lambda a -&gt; Lambda b)
+-&gt; (forall a b. a -&gt; Lambda b -&gt; Lambda a) -&gt; Functor Lambda
+forall a b. a -&gt; Lambda b -&gt; Lambda a
+forall a b. (a -&gt; b) -&gt; Lambda a -&gt; Lambda b
+forall (f :: * -&gt; *).
+(forall a b. (a -&gt; b) -&gt; f a -&gt; f b)
+-&gt; (forall a b. a -&gt; f b -&gt; f a) -&gt; Functor f
+$cfmap :: forall a b. (a -&gt; b) -&gt; Lambda a -&gt; Lambda b
+fmap :: forall a b. (a -&gt; b) -&gt; Lambda a -&gt; Lambda b
+$c&lt;$ :: forall a b. a -&gt; Lambda b -&gt; Lambda a
+&lt;$ :: forall a b. a -&gt; Lambda b -&gt; Lambda a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Functor</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679073250"><span id="local-6989586621679073256"><span id="local-6989586621679073268"><span id="local-6989586621679073273"><span id="local-6989586621679073279"><span id="local-6989586621679073282"><span id="local-6989586621679073285"><span id="local-6989586621679073288"><span id="local-6989586621679073291"><span id="local-6989586621679073294"><span id="local-6989586621679073297"><span id="local-6989586621679073303"><span id="local-6989586621679073306"><span id="local-6989586621679073311"><span id="local-6989586621679073316"><span id="local-6989586621679073321"><span id="local-6989586621679073326"><span class="annot"><span class="annottext">(forall m. Monoid m =&gt; Lambda m -&gt; m)
+-&gt; (forall m a. Monoid m =&gt; (a -&gt; m) -&gt; Lambda a -&gt; m)
+-&gt; (forall m a. Monoid m =&gt; (a -&gt; m) -&gt; Lambda a -&gt; m)
+-&gt; (forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; Lambda a -&gt; b)
+-&gt; (forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; Lambda a -&gt; b)
+-&gt; (forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; Lambda a -&gt; b)
+-&gt; (forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; Lambda a -&gt; b)
+-&gt; (forall a. (a -&gt; a -&gt; a) -&gt; Lambda a -&gt; a)
+-&gt; (forall a. (a -&gt; a -&gt; a) -&gt; Lambda a -&gt; a)
+-&gt; (forall a. Lambda a -&gt; [a])
+-&gt; (forall a. Lambda a -&gt; Bool)
+-&gt; (forall a. Lambda a -&gt; Int)
+-&gt; (forall a. Eq a =&gt; a -&gt; Lambda a -&gt; Bool)
+-&gt; (forall a. Ord a =&gt; Lambda a -&gt; a)
+-&gt; (forall a. Ord a =&gt; Lambda a -&gt; a)
+-&gt; (forall a. Num a =&gt; Lambda a -&gt; a)
+-&gt; (forall a. Num a =&gt; Lambda a -&gt; a)
+-&gt; Foldable Lambda
+forall a. Eq a =&gt; a -&gt; Lambda a -&gt; Bool
+forall a. Num a =&gt; Lambda a -&gt; a
+forall a. Ord a =&gt; Lambda a -&gt; a
+forall m. Monoid m =&gt; Lambda m -&gt; m
+forall a. Lambda a -&gt; Bool
+forall a. Lambda a -&gt; Int
+forall a. Lambda a -&gt; [a]
+forall a. (a -&gt; a -&gt; a) -&gt; Lambda a -&gt; a
+forall m a. Monoid m =&gt; (a -&gt; m) -&gt; Lambda a -&gt; m
+forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; Lambda a -&gt; b
+forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; Lambda a -&gt; b
+forall (t :: * -&gt; *).
+(forall m. Monoid m =&gt; t m -&gt; m)
+-&gt; (forall m a. Monoid m =&gt; (a -&gt; m) -&gt; t a -&gt; m)
+-&gt; (forall m a. Monoid m =&gt; (a -&gt; m) -&gt; t a -&gt; m)
+-&gt; (forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b)
+-&gt; (forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b)
+-&gt; (forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b)
+-&gt; (forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b)
+-&gt; (forall a. (a -&gt; a -&gt; a) -&gt; t a -&gt; a)
+-&gt; (forall a. (a -&gt; a -&gt; a) -&gt; t a -&gt; a)
+-&gt; (forall a. t a -&gt; [a])
+-&gt; (forall a. t a -&gt; Bool)
+-&gt; (forall a. t a -&gt; Int)
+-&gt; (forall a. Eq a =&gt; a -&gt; t a -&gt; Bool)
+-&gt; (forall a. Ord a =&gt; t a -&gt; a)
+-&gt; (forall a. Ord a =&gt; t a -&gt; a)
+-&gt; (forall a. Num a =&gt; t a -&gt; a)
+-&gt; (forall a. Num a =&gt; t a -&gt; a)
+-&gt; Foldable t
+$cfold :: forall m. Monoid m =&gt; Lambda m -&gt; m
+fold :: forall m. Monoid m =&gt; Lambda m -&gt; m
+$cfoldMap :: forall m a. Monoid m =&gt; (a -&gt; m) -&gt; Lambda a -&gt; m
+foldMap :: forall m a. Monoid m =&gt; (a -&gt; m) -&gt; Lambda a -&gt; m
+$cfoldMap' :: forall m a. Monoid m =&gt; (a -&gt; m) -&gt; Lambda a -&gt; m
+foldMap' :: forall m a. Monoid m =&gt; (a -&gt; m) -&gt; Lambda a -&gt; m
+$cfoldr :: forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; Lambda a -&gt; b
+foldr :: forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; Lambda a -&gt; b
+$cfoldr' :: forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; Lambda a -&gt; b
+foldr' :: forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; Lambda a -&gt; b
+$cfoldl :: forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; Lambda a -&gt; b
+foldl :: forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; Lambda a -&gt; b
+$cfoldl' :: forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; Lambda a -&gt; b
+foldl' :: forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; Lambda a -&gt; b
+$cfoldr1 :: forall a. (a -&gt; a -&gt; a) -&gt; Lambda a -&gt; a
+foldr1 :: forall a. (a -&gt; a -&gt; a) -&gt; Lambda a -&gt; a
+$cfoldl1 :: forall a. (a -&gt; a -&gt; a) -&gt; Lambda a -&gt; a
+foldl1 :: forall a. (a -&gt; a -&gt; a) -&gt; Lambda a -&gt; a
+$ctoList :: forall a. Lambda a -&gt; [a]
+toList :: forall a. Lambda a -&gt; [a]
+$cnull :: forall a. Lambda a -&gt; Bool
+null :: forall a. Lambda a -&gt; Bool
+$clength :: forall a. Lambda a -&gt; Int
+length :: forall a. Lambda a -&gt; Int
+$celem :: forall a. Eq a =&gt; a -&gt; Lambda a -&gt; Bool
+elem :: forall a. Eq a =&gt; a -&gt; Lambda a -&gt; Bool
+$cmaximum :: forall a. Ord a =&gt; Lambda a -&gt; a
+maximum :: forall a. Ord a =&gt; Lambda a -&gt; a
+$cminimum :: forall a. Ord a =&gt; Lambda a -&gt; a
+minimum :: forall a. Ord a =&gt; Lambda a -&gt; a
+$csum :: forall a. Num a =&gt; Lambda a -&gt; a
+sum :: forall a. Num a =&gt; Lambda a -&gt; a
+$cproduct :: forall a. Num a =&gt; Lambda a -&gt; a
+product :: forall a. Num a =&gt; Lambda a -&gt; a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Foldable</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679073335"><span id="local-6989586621679073351"><span id="local-6989586621679073356"><span id="local-6989586621679073361"><span class="annot"><span class="annottext">Functor Lambda
+Foldable Lambda
+(Functor Lambda, Foldable Lambda) =&gt;
+(forall (f :: * -&gt; *) a b.
+ Applicative f =&gt;
+ (a -&gt; f b) -&gt; Lambda a -&gt; f (Lambda b))
+-&gt; (forall (f :: * -&gt; *) a.
+    Applicative f =&gt;
+    Lambda (f a) -&gt; f (Lambda a))
+-&gt; (forall (m :: * -&gt; *) a b.
+    Monad m =&gt;
+    (a -&gt; m b) -&gt; Lambda a -&gt; m (Lambda b))
+-&gt; (forall (m :: * -&gt; *) a.
+    Monad m =&gt;
+    Lambda (m a) -&gt; m (Lambda a))
+-&gt; Traversable Lambda
+forall (t :: * -&gt; *).
+(Functor t, Foldable t) =&gt;
+(forall (f :: * -&gt; *) a b.
+ Applicative f =&gt;
+ (a -&gt; f b) -&gt; t a -&gt; f (t b))
+-&gt; (forall (f :: * -&gt; *) a. Applicative f =&gt; t (f a) -&gt; f (t a))
+-&gt; (forall (m :: * -&gt; *) a b.
+    Monad m =&gt;
+    (a -&gt; m b) -&gt; t a -&gt; m (t b))
+-&gt; (forall (m :: * -&gt; *) a. Monad m =&gt; t (m a) -&gt; m (t a))
+-&gt; Traversable t
+forall (m :: * -&gt; *) a. Monad m =&gt; Lambda (m a) -&gt; m (Lambda a)
+forall (f :: * -&gt; *) a.
+Applicative f =&gt;
+Lambda (f a) -&gt; f (Lambda a)
+forall (m :: * -&gt; *) a b.
+Monad m =&gt;
+(a -&gt; m b) -&gt; Lambda a -&gt; m (Lambda b)
+forall (f :: * -&gt; *) a b.
+Applicative f =&gt;
+(a -&gt; f b) -&gt; Lambda a -&gt; f (Lambda b)
+$ctraverse :: forall (f :: * -&gt; *) a b.
+Applicative f =&gt;
+(a -&gt; f b) -&gt; Lambda a -&gt; f (Lambda b)
+traverse :: forall (f :: * -&gt; *) a b.
+Applicative f =&gt;
+(a -&gt; f b) -&gt; Lambda a -&gt; f (Lambda b)
+$csequenceA :: forall (f :: * -&gt; *) a.
+Applicative f =&gt;
+Lambda (f a) -&gt; f (Lambda a)
+sequenceA :: forall (f :: * -&gt; *) a.
+Applicative f =&gt;
+Lambda (f a) -&gt; f (Lambda a)
+$cmapM :: forall (m :: * -&gt; *) a b.
+Monad m =&gt;
+(a -&gt; m b) -&gt; Lambda a -&gt; m (Lambda b)
+mapM :: forall (m :: * -&gt; *) a b.
+Monad m =&gt;
+(a -&gt; m b) -&gt; Lambda a -&gt; m (Lambda b)
+$csequence :: forall (m :: * -&gt; *) a. Monad m =&gt; Lambda (m a) -&gt; m (Lambda a)
+sequence :: forall (m :: * -&gt; *) a. Monad m =&gt; Lambda (m a) -&gt; m (Lambda a)
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Traversable</span></span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span>
+</span><span id="line-42"></span><span class="hs-comment">-- | Applicative instance for 'Variable'.</span><span>
+</span><span id="line-43"></span><span class="hs-comment">--</span><span>
+</span><span id="line-44"></span><span class="hs-comment">-- Allows the use of &lt;*&gt; to apply functions inside 'Free', propagating 'Bound'.</span><span>
+</span><span id="line-45"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679073370"><span id="local-6989586621679073374"><span id="local-6989586621679073377"><span class="annot"><span class="hs-identifier hs-type">Applicative</span></span><span> </span><span class="annot"><a href="LambdaAST.html#Variable"><span class="hs-identifier hs-type">Variable</span></a></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-46"></span><span>  </span><span id="local-6989586621679073380"><span class="annot"><span class="annottext">pure :: forall a. a -&gt; Variable a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">pure</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Variable a
+forall a. a -&gt; Variable a
+</span><a href="LambdaAST.html#Free"><span class="hs-identifier hs-var">Free</span></a></span><span>
+</span><span id="line-47"></span><span>  </span><span class="annot"><a href="LambdaAST.html#Free"><span class="hs-identifier hs-type">Free</span></a></span><span> </span><span id="local-6989586621679073381"><span class="annot"><span class="annottext">a -&gt; b
+</span><a href="#local-6989586621679073381"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679073382"><span class="annot"><span class="annottext">&lt;*&gt; :: forall a b. Variable (a -&gt; b) -&gt; Variable a -&gt; Variable b
+</span><span class="hs-operator hs-var hs-var hs-var hs-var">&lt;*&gt;</span></span></span><span> </span><span class="annot"><a href="LambdaAST.html#Free"><span class="hs-identifier hs-type">Free</span></a></span><span> </span><span id="local-6989586621679073383"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679073383"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">b -&gt; Variable b
+forall a. a -&gt; Variable a
+</span><a href="LambdaAST.html#Free"><span class="hs-identifier hs-var">Free</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; b
+</span><a href="#local-6989586621679073381"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679073383"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-48"></span><span>  </span><span class="annot"><span class="annottext">Variable (a -&gt; b)
+</span><a href="LambdaAST.html#Bound"><span class="hs-identifier hs-var">Bound</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Variable a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Variable b
+forall a. Variable a
+</span><a href="LambdaAST.html#Bound"><span class="hs-identifier hs-var">Bound</span></a></span><span>
+</span><span id="line-49"></span><span>  </span><span class="annot"><span class="annottext">Variable (a -&gt; b)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Variable a
+</span><a href="LambdaAST.html#Bound"><span class="hs-identifier hs-var">Bound</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Variable b
+forall a. Variable a
+</span><a href="LambdaAST.html#Bound"><span class="hs-identifier hs-var">Bound</span></a></span><span>
+</span><span id="line-50"></span><span>
+</span><span id="line-51"></span><span class="hs-comment">-- | Monad instance for 'Variable'.</span><span>
+</span><span id="line-52"></span><span class="hs-comment">--</span><span>
+</span><span id="line-53"></span><span class="hs-comment">-- Enables substitution: 'Free x' is replaced by a function result,</span><span>
+</span><span id="line-54"></span><span class="hs-comment">-- 'Bound' remains unchanged.</span><span>
+</span><span id="line-55"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679073388"><span id="local-6989586621679073392"><span class="annot"><span class="hs-identifier hs-type">Monad</span></span><span> </span><span class="annot"><a href="LambdaAST.html#Variable"><span class="hs-identifier hs-type">Variable</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-56"></span><span>  </span><span class="annot"><a href="LambdaAST.html#Free"><span class="hs-identifier hs-type">Free</span></a></span><span> </span><span id="local-6989586621679073395"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679073395"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679073396"><span class="annot"><span class="annottext">&gt;&gt;= :: forall a b. Variable a -&gt; (a -&gt; Variable b) -&gt; Variable b
+</span><span class="hs-operator hs-var hs-var hs-var hs-var">&gt;&gt;=</span></span></span><span> </span><span id="local-6989586621679073397"><span class="annot"><span class="annottext">a -&gt; Variable b
+</span><a href="#local-6989586621679073397"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Variable b
+</span><a href="#local-6989586621679073397"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679073395"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-57"></span><span>  </span><span class="annot"><span class="annottext">Variable a
+</span><a href="LambdaAST.html#Bound"><span class="hs-identifier hs-var">Bound</span></a></span><span>  </span><span class="annot"><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Variable b
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Variable b
+forall a. Variable a
+</span><a href="LambdaAST.html#Bound"><span class="hs-identifier hs-var">Bound</span></a></span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span class="hs-comment">-- | Applicative instance for 'Lambda'.</span><span>
+</span><span id="line-60"></span><span class="hs-comment">--</span><span>
+</span><span id="line-61"></span><span class="hs-comment">-- Enables structured application over 'Lambda' expressions.</span><span>
+</span><span id="line-62"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679073403"><span id="local-6989586621679073407"><span id="local-6989586621679073410"><span class="annot"><span class="hs-identifier hs-type">Applicative</span></span><span> </span><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-type">Lambda</span></a></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-63"></span><span>  </span><span id="local-6989586621679073412"><span class="annot"><span class="annottext">pure :: forall a. a -&gt; Lambda a
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">pure</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Lambda a
+forall a. a -&gt; Lambda a
+</span><a href="LambdaAST.html#Var"><span class="hs-identifier hs-var">Var</span></a></span><span>
+</span><span id="line-64"></span><span>  </span><span id="local-6989586621679073415"><span class="annot"><span class="annottext">&lt;*&gt; :: forall a b. Lambda (a -&gt; b) -&gt; Lambda a -&gt; Lambda b
+</span><span class="hs-operator hs-var hs-var hs-var hs-var">(&lt;*&gt;)</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Lambda (a -&gt; b) -&gt; Lambda a -&gt; Lambda b
+forall (m :: * -&gt; *) a b. Monad m =&gt; m (a -&gt; b) -&gt; m a -&gt; m b
+</span><span class="hs-identifier hs-var">ap</span></span><span>
+</span><span id="line-65"></span><span>
+</span><span id="line-66"></span><span class="hs-comment">-- | Monad instance for 'Lambda'.</span><span>
+</span><span id="line-67"></span><span class="hs-comment">--</span><span>
+</span><span id="line-68"></span><span class="hs-comment">-- This is the heart of substitution:</span><span>
+</span><span id="line-69"></span><span class="hs-comment">-- - 'Var a' is substituted by applying the function.</span><span>
+</span><span id="line-70"></span><span class="hs-comment">-- - 'App' and 'LamAbs' are recursively traversed.</span><span>
+</span><span id="line-71"></span><span class="hs-comment">-- - For 'LamAbs', the body is mapped with 'mapM f', because it contains nested 'Variable var' terms.</span><span>
+</span><span id="line-72"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679073420"><span id="local-6989586621679073423"><span class="annot"><span class="hs-identifier hs-type">Monad</span></span><span> </span><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-type">Lambda</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-73"></span><span>  </span><span class="annot"><a href="LambdaAST.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span id="local-6989586621679073430"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679073430"><span class="hs-identifier hs-var">a</span></a></span></span><span>       </span><span id="local-6989586621679073431"><span class="annot"><span class="annottext">&gt;&gt;= :: forall a b. Lambda a -&gt; (a -&gt; Lambda b) -&gt; Lambda b
+</span><span class="hs-operator hs-var hs-var hs-var hs-var">&gt;&gt;=</span></span></span><span> </span><span id="local-6989586621679073432"><span class="annot"><span class="annottext">a -&gt; Lambda b
+</span><a href="#local-6989586621679073432"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Lambda b
+</span><a href="#local-6989586621679073432"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679073430"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-74"></span><span>  </span><span class="annot"><a href="LambdaAST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span id="local-6989586621679073433"><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073433"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621679073434"><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073434"><span class="hs-identifier hs-var">u</span></a></span></span><span>     </span><span class="annot"><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span id="local-6989586621679073435"><span class="annot"><span class="annottext">a -&gt; Lambda b
+</span><a href="#local-6989586621679073435"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Lambda b -&gt; Lambda b -&gt; Lambda b
+forall var. Lambda var -&gt; Lambda var -&gt; Lambda var
+</span><a href="LambdaAST.html#App"><span class="hs-identifier hs-var">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073433"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda a -&gt; (a -&gt; Lambda b) -&gt; Lambda b
+forall a b. Lambda a -&gt; (a -&gt; Lambda b) -&gt; Lambda b
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Lambda b
+</span><a href="#local-6989586621679073435"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073434"><span class="hs-identifier hs-var">u</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda a -&gt; (a -&gt; Lambda b) -&gt; Lambda b
+forall a b. Lambda a -&gt; (a -&gt; Lambda b) -&gt; Lambda b
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Lambda b
+</span><a href="#local-6989586621679073435"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-75"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="LambdaAST.html#LamAbs"><span class="hs-identifier hs-type">LamAbs</span></a></span><span> </span><span id="local-6989586621679073436"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679073436"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span id="local-6989586621679073437"><span class="annot"><span class="annottext">Lambda (Variable a)
+</span><a href="#local-6989586621679073437"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span id="local-6989586621679073438"><span class="annot"><span class="annottext">a -&gt; Lambda b
+</span><a href="#local-6989586621679073438"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Lambda (Variable b) -&gt; Lambda b
+forall var. String -&gt; Lambda (Variable var) -&gt; Lambda var
+</span><a href="LambdaAST.html#LamAbs"><span class="hs-identifier hs-var">LamAbs</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679073436"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">(Lambda (Variable b) -&gt; Lambda b)
+-&gt; Lambda (Variable b) -&gt; Lambda b
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Lambda (Variable a)
+</span><a href="#local-6989586621679073437"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda (Variable a)
+-&gt; (Variable a -&gt; Lambda (Variable b)) -&gt; Lambda (Variable b)
+forall a b. Lambda a -&gt; (a -&gt; Lambda b) -&gt; Lambda b
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Lambda b) -&gt; Variable a -&gt; Lambda (Variable b)
+forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
+(Traversable t, Monad m) =&gt;
+(a -&gt; m b) -&gt; t a -&gt; m (t b)
+forall (m :: * -&gt; *) a b.
+Monad m =&gt;
+(a -&gt; m b) -&gt; Variable a -&gt; m (Variable b)
+</span><span class="hs-identifier hs-var">mapM</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Lambda b
+</span><a href="#local-6989586621679073438"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-76"></span><span>
+</span><span id="line-77"></span><span class="hs-comment">-- | Smart constructor for lambda abstractions.</span><span>
+</span><span id="line-78"></span><span class="hs-comment">--</span><span>
+</span><span id="line-79"></span><span class="hs-comment">-- Takes a variable name and a body term with plain 'String' variables,</span><span>
+</span><span id="line-80"></span><span class="hs-comment">-- and returns a 'Lambda' expression where the named variable is replaced</span><span>
+</span><span id="line-81"></span><span class="hs-comment">-- with 'Bound' inside the body, and all other variables become 'Free'.</span><span>
+</span><span id="line-82"></span><span class="hs-comment">--</span><span>
+</span><span id="line-83"></span><span class="hs-comment">-- This is what transforms a 'Lambda String' into a scoped 'Lambda (Variable String)'.</span><span>
+</span><span id="line-84"></span><span class="annot"><a href="LambdaAST.html#lam"><span class="hs-identifier hs-type">lam</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-type">Lambda</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-type">Lambda</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-85"></span><span id="lam"><span class="annot"><span class="annottext">lam :: String -&gt; Lambda String -&gt; Lambda String
+</span><a href="LambdaAST.html#lam"><span class="hs-identifier hs-var hs-var">lam</span></a></span></span><span> </span><span id="local-6989586621679073441"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679073441"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679073442"><span class="annot"><span class="annottext">Lambda String
+</span><a href="#local-6989586621679073442"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Lambda (Variable String) -&gt; Lambda String
+forall var. String -&gt; Lambda (Variable var) -&gt; Lambda var
+</span><a href="LambdaAST.html#LamAbs"><span class="hs-identifier hs-var">LamAbs</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679073441"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Variable String
+</span><a href="#local-6989586621679073443"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Variable String)
+-&gt; Lambda String -&gt; Lambda (Variable String)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Lambda String
+</span><a href="#local-6989586621679073442"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-86"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-87"></span><span>    </span><span id="local-6989586621679073443"><span class="annot"><span class="annottext">s :: String -&gt; Variable String
+</span><a href="#local-6989586621679073443"><span class="hs-identifier hs-var hs-var">s</span></a></span></span><span> </span><span id="local-6989586621679073447"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679073447"><span class="hs-identifier hs-var">x'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679073447"><span class="hs-identifier hs-var">x'</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679073441"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Variable String
+forall a. Variable a
+</span><a href="LambdaAST.html#Bound"><span class="hs-identifier hs-var">Bound</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">String -&gt; Variable String
+forall a. a -&gt; Variable a
+</span><a href="LambdaAST.html#Free"><span class="hs-identifier hs-var">Free</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679073447"><span class="hs-identifier hs-var">x'</span></a></span><span>
+</span><span id="line-88"></span><span>
+</span><span id="line-89"></span><span class="hs-comment">-- | Pretty-prints a lambda expression using a user-supplied printer for variables.</span><span>
+</span><span id="line-90"></span><span class="hs-comment">--</span><span>
+</span><span id="line-91"></span><span class="hs-comment">-- Free variables are printed via the given function @p :: a -&gt; Doc ann@.</span><span>
+</span><span id="line-92"></span><span class="hs-comment">-- Bound variables are printed by the variable name captured in the nearest 'LamAbs'.</span><span>
+</span><span id="line-93"></span><span id="local-6989586621679073045"><span id="local-6989586621679073046"><span class="annot"><a href="LambdaAST.html#prettyLambda"><span class="hs-identifier hs-type">prettyLambda</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679073045"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Doc</span></span><span> </span><span class="annot"><a href="#local-6989586621679073046"><span class="hs-identifier hs-type">ann</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-type">Lambda</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679073045"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Doc</span></span><span> </span><span class="annot"><a href="#local-6989586621679073046"><span class="hs-identifier hs-type">ann</span></a></span></span></span><span>
+</span><span id="line-94"></span><span id="prettyLambda"><span class="annot"><span class="annottext">prettyLambda :: forall a ann. (a -&gt; Doc ann) -&gt; Lambda a -&gt; Doc ann
+</span><a href="LambdaAST.html#prettyLambda"><span class="hs-identifier hs-var hs-var">prettyLambda</span></a></span></span><span> </span><span id="local-6989586621679073455"><span class="annot"><span class="annottext">a -&gt; Doc ann
+</span><a href="#local-6989586621679073455"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="LambdaAST.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span id="local-6989586621679073456"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679073456"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Doc ann
+</span><a href="#local-6989586621679073455"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679073456"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-95"></span><span class="annot"><a href="LambdaAST.html#prettyLambda"><span class="hs-identifier hs-var">prettyLambda</span></a></span><span> </span><span id="local-6989586621679073457"><span class="annot"><span class="annottext">a -&gt; Doc ann
+</span><a href="#local-6989586621679073457"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="LambdaAST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span id="local-6989586621679073458"><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073458"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621679073459"><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073459"><span class="hs-identifier hs-var">u</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann
+</span><span class="hs-identifier hs-var">parens</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(a -&gt; Doc ann) -&gt; Lambda a -&gt; Doc ann
+forall a ann. (a -&gt; Doc ann) -&gt; Lambda a -&gt; Doc ann
+</span><a href="LambdaAST.html#prettyLambda"><span class="hs-identifier hs-var">prettyLambda</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; Doc ann
+</span><a href="#local-6989586621679073457"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073458"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Doc ann) -&gt; Lambda a -&gt; Doc ann
+forall a ann. (a -&gt; Doc ann) -&gt; Lambda a -&gt; Doc ann
+</span><a href="LambdaAST.html#prettyLambda"><span class="hs-identifier hs-var">prettyLambda</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; Doc ann
+</span><a href="#local-6989586621679073457"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda a
+</span><a href="#local-6989586621679073459"><span class="hs-identifier hs-var">u</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-96"></span><span class="annot"><a href="LambdaAST.html#prettyLambda"><span class="hs-identifier hs-var">prettyLambda</span></a></span><span> </span><span id="local-6989586621679073462"><span class="annot"><span class="annottext">a -&gt; Doc ann
+</span><a href="#local-6989586621679073462"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="LambdaAST.html#LamAbs"><span class="hs-identifier hs-type">LamAbs</span></a></span><span> </span><span id="local-6989586621679073463"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679073463"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679073464"><span class="annot"><span class="annottext">Lambda (Variable a)
+</span><a href="#local-6989586621679073464"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-97"></span><span>  </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann
+</span><span class="hs-identifier hs-var">group</span></span><span> </span><span class="annot"><span class="annottext">(Doc ann -&gt; Doc ann) -&gt; Doc ann -&gt; Doc ann
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Doc ann
+forall ann. String -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&#955;&quot;</span></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Doc ann
+forall ann. String -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679073463"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Doc ann
+forall ann. String -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;.&quot;</span></span><span> </span><span class="annot"><span class="annottext">Doc ann -&gt; Doc ann -&gt; Doc ann
+forall ann. Doc ann -&gt; Doc ann -&gt; Doc ann
+</span><span class="hs-operator hs-var">&lt;+&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Variable a -&gt; Doc ann) -&gt; Lambda (Variable a) -&gt; Doc ann
+forall a ann. (a -&gt; Doc ann) -&gt; Lambda a -&gt; Doc ann
+</span><a href="LambdaAST.html#prettyLambda"><span class="hs-identifier hs-var">prettyLambda</span></a></span><span> </span><span class="annot"><span class="annottext">Variable a -&gt; Doc ann
+</span><a href="#local-6989586621679073467"><span class="hs-identifier hs-var">p'</span></a></span><span> </span><span class="annot"><span class="annottext">Lambda (Variable a)
+</span><a href="#local-6989586621679073464"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-98"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-99"></span><span>    </span><span class="hs-comment">-- Restores name 'x' for Bound variables, delegates to 'p' for Free ones</span><span>
+</span><span id="line-100"></span><span>    </span><span id="local-6989586621679073467"><span class="annot"><span class="annottext">p' :: Variable a -&gt; Doc ann
+</span><a href="#local-6989586621679073467"><span class="hs-identifier hs-var hs-var">p'</span></a></span></span><span> </span><span class="annot"><span class="annottext">Variable a
+</span><a href="LambdaAST.html#Bound"><span class="hs-identifier hs-var">Bound</span></a></span><span>     </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Doc ann
+forall ann. String -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679073463"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-101"></span><span>    </span><span class="annot"><a href="#local-6989586621679073467"><span class="hs-identifier hs-var">p'</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="LambdaAST.html#Free"><span class="hs-identifier hs-type">Free</span></a></span><span> </span><span id="local-6989586621679073470"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679073470"><span class="hs-identifier hs-var">x'</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; Doc ann
+</span><a href="#local-6989586621679073462"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679073470"><span class="hs-identifier hs-var">x'</span></a></span><span>
+</span><span id="line-102"></span><span>
+</span><span id="line-103"></span><span class="hs-comment">-- | Renders a lambda expression as a human-readable string using 'prettyLambda'.</span><span>
+</span><span id="line-104"></span><span class="hs-comment">--</span><span>
+</span><span id="line-105"></span><span class="hs-comment">-- This is the default printer that uses 'String' variables.</span><span>
+</span><span id="line-106"></span><span class="annot"><a href="LambdaAST.html#renderLambda"><span class="hs-identifier hs-type">renderLambda</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="LambdaAST.html#Lambda"><span class="hs-identifier hs-type">Lambda</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-107"></span><span id="renderLambda"><span class="annot"><span class="annottext">renderLambda :: Lambda String -&gt; String
+</span><a href="LambdaAST.html#renderLambda"><span class="hs-identifier hs-var hs-var">renderLambda</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SimpleDocStream Any -&gt; String
+forall ann. SimpleDocStream ann -&gt; String
+</span><span class="hs-identifier hs-var">renderString</span></span><span> </span><span class="annot"><span class="annottext">(SimpleDocStream Any -&gt; String)
+-&gt; (Lambda String -&gt; SimpleDocStream Any)
+-&gt; Lambda String
+-&gt; String
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">LayoutOptions -&gt; Doc Any -&gt; SimpleDocStream Any
+forall ann. LayoutOptions -&gt; Doc ann -&gt; SimpleDocStream ann
+</span><span class="hs-identifier hs-var">layoutPretty</span></span><span> </span><span class="annot"><span class="annottext">LayoutOptions
+</span><span class="hs-identifier hs-var">defaultLayoutOptions</span></span><span> </span><span class="annot"><span class="annottext">(Doc Any -&gt; SimpleDocStream Any)
+-&gt; (Lambda String -&gt; Doc Any)
+-&gt; Lambda String
+-&gt; SimpleDocStream Any
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Doc Any) -&gt; Lambda String -&gt; Doc Any
+forall a ann. (a -&gt; Doc ann) -&gt; Lambda a -&gt; Doc ann
+</span><a href="LambdaAST.html#prettyLambda"><span class="hs-identifier hs-var">prettyLambda</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; Doc Any
+forall ann. String -&gt; Doc ann
+forall a ann. Pretty a =&gt; a -&gt; Doc ann
+</span><span class="hs-identifier hs-var">pretty</span></span><span>
+</span><span id="line-108"></span></pre></body></html>
