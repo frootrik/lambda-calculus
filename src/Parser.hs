@@ -1,63 +1,58 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Parser (topParser) where
+module Parser (parseLambda, topParser) where
 
 import LambdaAST
 import Text.Megaparsec
-import qualified Text.Megaparsec.Char as C
+import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 import Data.Void
 
-{-parsec vs parsect? trenger ikke side effekter->parsec
-
---type Parsec e s a = ParsecT e s Identity a
-
-e: the type of custom component of error message (?)
-s: the type of input stream 
-m: inner monad of the parsect monad transformer 
-a: monadic value, result of parsing (output?) m = identity = resultat av parse?
 type Parser = Parsec Void String
 
-Out-of-box for String, Text, ByteString og Stream
-
-
--}
-
-type Parser = Parsec Void String
-
+-- Space consumer that ignores whitespace
 consumeSpace :: Parser ()
-consumeSpace = L.space C.space1 empty empty
+consumeSpace = L.space space1 empty empty
 
+-- Lexeme that consumes trailing whitespace
 lexeme :: Parser a -> Parser a
-lexeme = L.lexeme consumeSpace 
+lexeme = L.lexeme consumeSpace
 
+-- Symbol parser that consumes trailing whitespace
 symbol :: String -> Parser String
-symbol = L.symbol consumeSpace 
+symbol = L.symbol consumeSpace
 
-varParser :: Parser Expr
-varParser = Var <$> lexeme ((:) <$> C.letterChar <*> many C.alphaNumChar)
+-- Parse a variable name (identifier)
+identifier :: Parser String
+identifier = lexeme ((:) <$> letterChar <*> many alphaNumChar)
 
-parens :: Parser Expr
-parens = between (symbol "(") (symbol ")") expressionParser
+-- Parse a variable reference
+pVar :: Parser (Lambda String)
+pVar = Var <$> identifier
 
-abstractionParser :: Parser Expr
-abstractionParser = do
-    _ <- lexeme (C.char '\\' <|> C.char 'λ')
-    toSub <- lexeme ((:) <$> C.letterChar <*> many C.alphaNumChar)
-    _ <- lexeme (C.char '.')
-    funcexpr <- expressionParser
-    return (Abs toSub funcexpr)
 
-termParser :: Parser Expr
-termParser = parens <|> abstractionParser <|> varParser
+pParens :: Parser (Lambda String)
+pParens = between (symbol "(") (symbol ")") parseLambda
 
-expressionParser :: Parser Expr
-expressionParser = do
-    terms <- some termParser
-    -- return $ foldl App terms
-    return $ foldl1 App terms 
+-- Parse a lambda abstraction
+pLam :: Parser (Lambda String)
+pLam = do 
+  _ <- symbol "\\" <|> symbol "λ" -- parse \ eller λ
+  param <- identifier -- parse så identifieren, som er en Streng
+  _ <- symbol "." -- parse så ., for λ.x, for eksempel
+  lam param <$> parseLambda -- 
 
-topParser :: String -> Either (ParseErrorBundle String Void) Expr
-topParser = parse (consumeSpace *> expressionParser <* eof) ""
--- eof :: MonadParsec e s m => m () : "only"
+-- Parse an application
+pApp :: Parser (Lambda String)
+pApp = do
+  terms <- some pTerm
+  return $ foldl1 App terms
+  where
+    pTerm = choice [pParens, pVar]
 
--- parse :: Parsec e s a -> SourceName -> s -> Either (ParseErrorBundle s e) a
+-- Parse any lambda calculus expression
+parseLambda :: Parser (Lambda String)
+parseLambda = try pLam <|> try pApp <|> try pParens <|> try pVar
+ 
+-- Top-level parser that handles the whole input
+topParser :: String -> Either (ParseErrorBundle String Void) (Lambda String)
+topParser = parse (consumeSpace *> parseLambda <* eof) ""

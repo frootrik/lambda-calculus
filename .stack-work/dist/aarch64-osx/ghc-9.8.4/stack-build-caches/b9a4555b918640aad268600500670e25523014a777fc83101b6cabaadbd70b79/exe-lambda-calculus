@@ -1,0 +1,14 @@
+/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/CHANGELOG.md:
+  hash: 40c97623b4b7f1dddb868716ecb58c8286c39c1352b08f024a95b1508c0be80f
+/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/README.md:
+  hash: 864cb6c1e9a46bd173d16bd9f25fee2152706526aa557ab621409d40d3bd267f
+/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/lambda-calculus.cabal:
+  hash: a42acab7059c282f093b86af418d0315be44b7673d4bdd3cbb158e6e9f2c329d
+/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/src/Evaluator.hs:
+  hash: 59f1f744ee11d58385873aa351374d5a04fed968badf9eec5f83ecf20aaef4fc
+/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/src/LambdaAST.hs:
+  hash: 2915e9e3dfbd96aae0399fe3df23fb8c15deab86bdbfbbf71c03a14d2c24d1a5
+/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/src/Main.hs:
+  hash: d2ddb3dad7b91e6af98a05d2e12ef914a3085ed71c4dc686670436394340a28f
+/Users/fredriklauritzen/Documents/UiB/INF221/lambda-calculus/src/Parser.hs:
+  hash: a1efb2cf19197c1f6d90e553b0570dc1e9c4eae8c16223974bd1c53f3714c839

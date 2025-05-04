@@ -1,38 +1,45 @@
 module Main where
 
+import Evaluator
 import LambdaAST
-import Parser
-import System.IO
+import Text.Megaparsec (errorBundlePretty)
+import Parser (topParser)
+import System.IO (hFlush, stdout)
 
 
-betaReduce :: String -> Expr -> Expr -> Expr
-betaReduce toSub sub expr = 
-        case expr of
-    Var x            -> if x == toSub then sub else Var x
-    Abs x funcexpr   -> if x == toSub then Abs x funcexpr else Abs x (betaReduce toSub sub funcexpr)
-    App arg1 arg2    -> App (betaReduce toSub sub arg1) (betaReduce toSub sub arg2)
-
-
-eval :: Expr -> Expr
-eval (App (Abs toSub funcexpr) freevar) = eval (betaReduce toSub freevar funcexpr)
-eval (App arg1 arg2)                = App (eval arg1) (eval arg2)
-eval (Abs toSub funcexpr)           = Abs toSub (eval funcexpr)
-eval x                              = x
-
--- alphaconv :: Expr -> Expr
-
--- step :: 
-
-
-
--- subscript
+repl :: IO ()
+repl = do
+  putStr "λ> "
+  hFlush stdout
+  input <- getLine
+  case input of
+    ":q" -> putStrLn "Goodbye!"
+    ":sam" -> do
+      putStrLn "Sample expressions:"
+      putStrLn "  λ> λx.x                  - Identity function"
+      putStrLn "  λ> (λx.x y)              - Apply identity to y"
+      putStrLn "  λ> (λx.λy.x)             - Constant function"
+      putStrLn "  λ> ((λx.λy.x) a b)       - Apply constant to a and b"
+      putStrLn "  λ> (λf.(λx.(f (f x))))   - Church numeral 2"
+      repl
+    ":h" -> do
+      putStrLn "Commands:"
+      putStrLn "  :q     - Quit"
+      putStrLn "  :h     - Show help"
+      putStrLn "  :step  - Evaluate expression step by step"
+      putStrLn "  :eval  - Evaluate expression to normal form"
+      putStrLn "  :sam   - Show sample expressions"
+      repl
+      
+    _    -> do
+      case topParser input of
+        Left err -> putStrLn $ errorBundlePretty err
+        Right parsed -> do
+          let result = eval parsed
+          putStrLn $ renderLambda result
+      repl
 
 main :: IO ()
 main = do
-    putStrLn "λ> "
-    input <- getLine
-    case topParser input of
-        Left err -> print err
-        Right ast -> do
-            print ast
-            print (eval ast)
+  putStrLn "Lambda Calculus REPL — type :h for help"
+  repl
